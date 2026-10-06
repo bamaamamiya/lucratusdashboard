@@ -15,17 +15,19 @@ import { getLeads } from "@/lib/leadService";
 
 const FILTERS = [
   { key: "all", label: "All Leads" },
+  { key: "new", label: "New" },
   { key: "qualified", label: "Qualified" },
-  { key: "not_qualified", label: "Not Qualified" },
+  { key: "nurture", label: "Nurture" },
+  { key: "call_booked", label: "Call Booked" },
+  { key: "won", label: "Won" },
+  { key: "not_fit", label: "Not Fit" },
 ];
 
 function formatDate(timestamp) {
   if (!timestamp) return "-";
 
   try {
-    const date = timestamp.toDate
-      ? timestamp.toDate()
-      : new Date(timestamp);
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
 
     return date.toLocaleDateString("id-ID", {
       day: "2-digit",
@@ -37,8 +39,8 @@ function formatDate(timestamp) {
   }
 }
 
-function QualificationBadge({ qualified }) {
-  if (qualified === true) {
+function QualificationBadge({ tier }) {
+  if (tier === "qualified") {
     return (
       <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-400">
         Qualified
@@ -46,17 +48,25 @@ function QualificationBadge({ qualified }) {
     );
   }
 
-  if (qualified === false) {
+  if (tier === "nurture") {
+    return (
+      <span className="inline-flex items-center rounded-full bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-400">
+        Nurture
+      </span>
+    );
+  }
+
+  if (tier === "not_fit") {
     return (
       <span className="inline-flex items-center rounded-full bg-zinc-800 px-3 py-1 text-xs font-medium text-zinc-500">
-        Not Qualified
+        Not Fit
       </span>
     );
   }
 
   return (
-    <span className="inline-flex items-center rounded-full bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-400">
-      Review
+    <span className="inline-flex items-center rounded-full bg-zinc-800 px-3 py-1 text-xs font-medium text-zinc-500">
+      Unknown
     </span>
   );
 }
@@ -68,9 +78,7 @@ function StatCard({ icon: Icon, label, value }) {
         <div>
           <p className="text-sm text-zinc-500">{label}</p>
 
-          <p className="mt-2 text-2xl font-bold tracking-tight">
-            {value}
-          </p>
+          <p className="mt-2 text-2xl font-bold tracking-tight">{value}</p>
         </div>
 
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-800 text-zinc-400">
@@ -112,22 +120,30 @@ export default function LeadsPage() {
   }, []);
 
   const stats = useMemo(() => {
+    const newLeads = leads.filter((lead) => lead.salesStage === "new").length;
+
     const qualified = leads.filter(
-      (lead) => lead.qualified === true
+      (lead) => lead.qualificationTier === "qualified",
     ).length;
 
-    const newLeads = leads.filter(
-      (lead) => !lead.salesStage || lead.salesStage === "new"
+    const nurture = leads.filter(
+      (lead) => lead.qualificationTier === "nurture",
+    ).length;
+
+    const notFit = leads.filter(
+      (lead) => lead.qualificationTier === "not_fit",
     ).length;
 
     const booked = leads.filter(
-      (lead) => lead.salesStage === "call_booked"
+      (lead) => lead.salesStage === "call_booked",
     ).length;
 
     return {
       all: leads.length,
-      qualified,
       newLeads,
+      qualified,
+      nurture,
+      notFit,
       booked,
     };
   }, [leads]);
@@ -146,8 +162,12 @@ export default function LeadsPage() {
 
       const matchesFilter =
         filter === "all" ||
-        (filter === "qualified" && lead.qualified === true) ||
-        (filter === "not_qualified" && lead.qualified === false);
+        (filter === "new" && lead.salesStage === "new") ||
+        (filter === "qualified" && lead.qualificationTier === "qualified") ||
+        (filter === "nurture" && lead.qualificationTier === "nurture") ||
+        (filter === "call_booked" && lead.salesStage === "call_booked") ||
+        (filter === "won" && lead.salesStage === "won") ||
+        (filter === "not_fit" && lead.qualificationTier === "not_fit");
 
       return matchesSearch && matchesFilter;
     });
@@ -160,13 +180,9 @@ export default function LeadsPage() {
 
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <p className="text-sm text-zinc-500">
-              Growth Audit
-            </p>
+            <p className="text-sm text-zinc-500">Growth Audit</p>
 
-            <h1 className="mt-1 text-3xl font-bold">
-              Leads
-            </h1>
+            <h1 className="mt-1 text-3xl font-bold">Leads</h1>
           </div>
 
           <button
@@ -174,11 +190,7 @@ export default function LeadsPage() {
             disabled={refreshing}
             className="flex items-center gap-2 rounded-xl border border-[#27272A] bg-[#18181B] px-4 py-2.5 text-sm font-medium text-zinc-300 transition hover:bg-zinc-800 hover:text-white disabled:opacity-50"
           >
-            <RefreshCw
-              size={17}
-              className={refreshing ? "animate-spin" : ""}
-            />
-
+            <RefreshCw size={17} className={refreshing ? "animate-spin" : ""} />
             Refresh
           </button>
         </div>
@@ -186,11 +198,7 @@ export default function LeadsPage() {
         {/* STATS */}
 
         <div className="mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <StatCard
-            icon={Users}
-            label="All Leads"
-            value={stats.all}
-          />
+          <StatCard icon={Users} label="All Leads" value={stats.all} />
 
           <StatCard
             icon={UserCheck}
@@ -198,11 +206,7 @@ export default function LeadsPage() {
             value={stats.qualified}
           />
 
-          <StatCard
-            icon={UserPlus}
-            label="New"
-            value={stats.newLeads}
-          />
+          <StatCard icon={UserPlus} label="New" value={stats.newLeads} />
 
           <StatCard
             icon={CalendarCheck}
@@ -214,10 +218,7 @@ export default function LeadsPage() {
         {/* SEARCH */}
 
         <div className="mb-5 flex items-center gap-3 rounded-xl border border-[#27272A] bg-[#18181B] px-4">
-          <Search
-            size={18}
-            className="text-zinc-500"
-          />
+          <Search size={18} className="text-zinc-500" />
 
           <input
             value={search}
@@ -263,9 +264,7 @@ export default function LeadsPage() {
             </div>
           ) : filteredLeads.length === 0 ? (
             <div className="py-20 text-center">
-              <p className="text-sm text-zinc-500">
-                No leads found.
-              </p>
+              <p className="text-sm text-zinc-500">No leads found.</p>
 
               <p className="mt-1 text-xs text-zinc-700">
                 New Growth Audit submissions will appear here.
@@ -281,9 +280,7 @@ export default function LeadsPage() {
                   {/* LEAD */}
 
                   <div>
-                    <div className="font-medium">
-                      {lead.name || "Unknown"}
-                    </div>
+                    <div className="font-medium">{lead.name || "Unknown"}</div>
 
                     <div className="mt-1 text-xs text-zinc-600">
                       {lead.email || lead.whatsapp || "-"}
@@ -321,12 +318,9 @@ export default function LeadsPage() {
                   {/* QUALIFICATION */}
 
                   <div>
-                    <QualificationBadge
-                      qualified={lead.qualified}
-                    />
+                    <QualificationBadge tier={lead.qualificationTier} />
 
-                    {typeof lead.qualificationScore ===
-                      "number" && (
+                    {typeof lead.qualificationScore === "number" && (
                       <p className="mt-2 text-xs text-zinc-600">
                         Score {lead.qualificationScore}
                       </p>
