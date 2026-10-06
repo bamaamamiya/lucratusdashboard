@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 import { useAuth } from "@/context/AuthContext";
 import { getClients } from "@/lib/clientService";
-
+import { getDateRange } from "@/lib/dateUtils";
 export default function AnalyticsPage() {
   const { user, loading: authLoading } = useAuth();
 
@@ -16,9 +16,10 @@ export default function AnalyticsPage() {
 
     return localStorage.getItem("analyticsClientId") || "";
   });
-
-  const [startDate, setStartDate] = useState("2026-09-25");
-  const [endDate, setEndDate] = useState("2026-09-25");
+  const [datePreset, setDatePreset] = useState("this_week");
+  const initialRange = getDateRange("this_week");
+  const [startDate, setStartDate] = useState(initialRange.startDate);
+  const [endDate, setEndDate] = useState(initialRange.endDate);
 
   const [syncing, setSyncing] = useState(false);
 
@@ -180,22 +181,22 @@ export default function AnalyticsPage() {
               <label className="block text-xs text-zinc-500 mb-2">Client</label>
 
               <select
-                value={clientId}
+                value={datePreset}
                 onChange={(e) => {
-                  const value = e.target.value;
+                  const preset = e.target.value;
 
-                  setClientId(value);
+                  setDatePreset(preset);
 
-                  if (value) {
-                    localStorage.setItem("analyticsClientId", value);
-                  } else {
-                    localStorage.removeItem("analyticsClientId");
+                  if (preset === "custom") {
+                    return;
                   }
+                  const range = getDateRange(preset);
+                  setStartDate(range.startDate);
+                  setEndDate(range.endDate);
                 }}
                 className="w-full bg-[#0D0D0D] border border-[#27272A] rounded-xl px-3 py-2.5 text-sm outline-none"
               >
                 <option value="">All Clients</option>
-
                 {clients.map((client) => (
                   <option key={client.id} value={client.id}>
                     {client.businessName}

@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Users,
+  UserRound,
   Wallet,
   Megaphone,
   ChartColumn,
@@ -13,7 +14,7 @@ import {
   LogOut,
   Loader2,
   Receipt,
-	Package 
+  Package,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -29,6 +30,11 @@ const menus = [
     href: "/products",
     label: "Products",
     icon: Package,
+  },
+  {
+    href: "/leads",
+    label: "Leads",
+    icon: UserRound,
   },
   {
     href: "/clients",
@@ -101,9 +107,13 @@ export default function Sidebar() {
     <aside className="w-64 min-h-screen shrink-0 bg-[#18181B] border-r border-[#27272A] p-5 flex flex-col">
       {/* LOGO */}
       <div className="px-3 py-4 mb-7">
-        <h1 className="text-xl font-bold tracking-[0.08em]">LUCRATUS</h1>
+        <h1 className="text-xl font-bold tracking-[0.08em]">
+          LUCRATUS
+        </h1>
 
-        <p className="text-xs text-zinc-500 mt-1">Agency Analytics</p>
+        <p className="text-xs text-zinc-500 mt-1">
+          Agency Analytics
+        </p>
       </div>
 
       {/* MENU */}
@@ -134,11 +144,15 @@ export default function Sidebar() {
                 size={18}
                 strokeWidth={active ? 2.2 : 1.8}
                 className={
-                  active ? "text-white" : "text-zinc-500 group-hover:text-white"
+                  active
+                    ? "text-white"
+                    : "text-zinc-500 group-hover:text-white"
                 }
               />
 
-              <span className={active ? "font-medium" : "font-normal"}>
+              <span
+                className={active ? "font-medium" : "font-normal"}
+              >
                 {item.label}
               </span>
             </Link>
@@ -165,7 +179,10 @@ export default function Sidebar() {
           "
         >
           {loggingOut ? (
-            <Loader2 size={18} className="animate-spin" />
+            <Loader2
+              size={18}
+              className="animate-spin"
+            />
           ) : (
             <LogOut size={18} />
           )}
